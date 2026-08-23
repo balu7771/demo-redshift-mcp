@@ -1,0 +1,22 @@
+[project]
+name = "demo-redshift-mcp"
+version = "0.1.0"
+description = "Insurance Customer Migration Analysis POC"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai>=0.45.0",
+    "crewai-tools>=0.13.0",
+    "gradio>=4.0.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "python-dotenv>=1.0.0",
+    "anthropic>=0.24.0",
+]
+
+[project.scripts]
+demo-redshift-mcp = "demo_redshift_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
