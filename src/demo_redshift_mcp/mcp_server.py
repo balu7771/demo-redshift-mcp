@@ -1,4 +1,4 @@
-"""MCP Server exposing insurance data tools."""
+"""MCP Server exposing Ratha Chakram expat insurance data tools."""
 
 from .data_layer import DataLayer
 
@@ -7,7 +7,7 @@ from .data_layer import DataLayer
 # ============================================================================
 
 class InsuranceMCPTools:
-    """MCP tools for querying insurance customer data."""
+    """MCP tools for querying Ratha Chakram expat insurance data."""
 
     def __init__(self, data_layer: DataLayer):
         self.data = data_layer
@@ -16,55 +16,58 @@ class InsuranceMCPTools:
     # Individual Query Tools
     # ========================================================================
 
-    def get_renewed_customers_count(self) -> str:
-        """Get count of customers who renewed from legacy to new product."""
-        result = self.data.customers_renewed()
-        return f"Renewed Customers: {result['count']} ({result['percentage']}% of legacy)"
+    def get_switched_customers_count(self) -> str:
+        """Get count of expats who switched from a competitor to Ratha Chakram."""
+        result = self.data.customers_switched()
+        return f"Switched to Ratha Chakram: {result['count']} ({result['percentage']}% of competitor pool)"
 
-    def get_customers_left_count(self) -> str:
-        """Get count of customers who left and didn't renew."""
-        result = self.data.customers_left()
+    def get_retained_by_competitors_count(self) -> str:
+        """Get count of expats who remain on competitor plans."""
+        result = self.data.customers_retained_by_competitors()
         breakdown = ", ".join([f"{k}: {v}" for k, v in result["by_status"].items()])
-        return f"Customers Left: {result['count']} ({result['percentage']}% of legacy). By Status: {breakdown}"
+        return f"Retained by Competitors: {result['count']} ({result['percentage']}% of competitor pool). By Status: {breakdown}"
 
-    def get_returned_customers_count(self) -> str:
-        """Get count of customers who came back from competitors."""
-        result = self.data.customers_returned()
+    def get_switches_by_competitor(self) -> str:
+        """Get breakdown of Ratha switches by which competitor the expat came from."""
+        result = self.data.switches_by_competitor()
         by_competitor = ", ".join([f"{k}: {v}" for k, v in result["by_competitor"].items()])
-        return f"Returned Customers: {result['count']} ({result['percentage']}% of legacy). From: {by_competitor}"
+        return f"Switched Customers: {result['count']} ({result['percentage']}% of competitor pool). From: {by_competitor}"
 
-    def get_return_reasons(self) -> str:
-        """Get inferred reasons why customers came back."""
-        result = self.data.infer_return_reasons()
-        breakdown = ", ".join([f"{k}: {v}" for k, v in result["reason_breakdown"].items()])
-        return f"Return Reasons: {breakdown}. (Based on pricing & feature analysis)"
+    def get_switch_reasons(self) -> str:
+        """Get reasons why expats left competitors and chose Ratha Chakram."""
+        result = self.data.get_switch_reasons()
+        left = ", ".join([f"{k}: {v}" for k, v in result["reason_left_previous"].items()])
+        chose = ", ".join([f"{k}: {v}" for k, v in result["reason_chose_ratha"].items()])
+        return f"Reasons left previous provider: {left}. Reasons chose Ratha Chakram: {chose}."
 
     def get_comprehensive_analysis(self) -> str:
-        """Get comprehensive cross-store migration analysis."""
+        """Get comprehensive cross-store competitive migration analysis."""
         result = self.data.cross_join_analysis()
-        return result["summary"] + f"\n\nReturn Reasons Breakdown:\n" + \
-               "\n".join([f"  • {k}: {v}" for k, v in result["return_reasons"].items()])
+        return result["summary"] + f"\n\nSwitch Reasons Breakdown:\n" + \
+               "\n".join([f"  • {k}: {v}" for k, v in result["switch_reasons"].items()])
 
     # ========================================================================
     # Supporting Query Tools
     # ========================================================================
 
-    def query_legacy_by_state(self, state: str) -> str:
-        """Get legacy customers for a specific state."""
-        result = self.data.query_legacy_customers({"state": state})
-        return f"Legacy customers in {state}: {len(result)} customers. Avg premium: ${result['premium_6month'].mean():.2f}"
+    def query_competitor_pool_by_state(self, state: str) -> str:
+        """Get competitor-pool expats for a specific US state."""
+        result = self.data.query_competitor_pool({"us_state": state})
+        return f"Expats on competitor plans in {state}: {len(result)}. Avg premium: ${result['monthly_premium'].mean():.2f}"
 
-    def query_new_product_by_feature(self, feature: str) -> str:
-        """Get new product customers by feature adoption."""
-        result = self.data.query_new_product_customers({"feature_adoption": feature})
-        return f"New product customers with {feature} feature: {len(result)} customers. Avg premium: ${result['premium_6month'].mean():.2f}"
+    def query_ratha_by_coverage_type(self, coverage_type: str) -> str:
+        """Get Ratha Chakram customers by coverage type (Auto, Health, Renter, Auto+Health)."""
+        result = self.data.query_ratha_customers({"coverage_types": coverage_type})
+        return f"Ratha customers with {coverage_type} coverage: {len(result)}. Avg premium: ${result['ratha_monthly_premium'].mean():.2f}"
 
     def get_competitor_analysis(self, competitor: str) -> str:
-        """Get customers who went to a specific competitor."""
-        result = self.data.query_competitor_coverage({"competitor_name": competitor})
-        active_coverage = result[result["coverage_end"].isna()]
-        returned = result[result["coverage_end"].notna()]
-        return f"{competitor}: {len(active_coverage)} still there, {len(returned)} came back"
+        """Get stats for a specific competitor: how many expats remain vs switched away."""
+        pool = self.data.query_competitor_pool({"current_provider": competitor})
+        switched_away = self.data.query_ratha_customers()
+        switched_away = switched_away[switched_away["switched_from"] == competitor]
+        switched_ids = set(switched_away["expat_id"])
+        remaining = pool[~pool["expat_id"].isin(switched_ids)]
+        return f"{competitor}: {len(remaining)} still with them, {len(switched_away)} switched to Ratha Chakram"
 
 
 # ============================================================================

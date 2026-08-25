@@ -13,9 +13,9 @@ def ensure_data_exists():
     """Ensure mock data is generated."""
     data_dir = Path("./data")
     required_files = [
-        data_dir / "legacy_product.xlsx",
-        data_dir / "new_product_customers.csv",
-        data_dir / "competitor_coverage.csv",
+        data_dir / "competitor_expat_plans.xlsx",
+        data_dir / "ratha_chakram_customers.csv",
+        data_dir / "expat_competitive_tracking.csv",
     ]
 
     if not all(f.exists() for f in required_files):
@@ -43,7 +43,6 @@ def create_interface():
 
     with gr.Blocks(
         title="Insurance Customer Migration Analyzer",
-        theme=gr.themes.Soft(),
     ) as demo:
         gr.Markdown(
             """
@@ -73,7 +72,6 @@ def create_interface():
                     label="Analysis Results",
                     lines=20,
                     max_lines=30,
-                    show_copy_button=True,
                 )
 
         # Connect button to handler
@@ -103,4 +101,4 @@ def create_interface():
 
 if __name__ == "__main__":
     interface = create_interface()
-    interface.launch(server_name="0.0.0.0", server_port=7860, share=False)
+    interface.launch(server_name="0.0.0.0", server_port=7860, share=False, theme=gr.themes.Soft())

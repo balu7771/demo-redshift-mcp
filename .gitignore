@@ -8,3 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+#environment file
+.env
+
+# generated :
+.DS_Store
+

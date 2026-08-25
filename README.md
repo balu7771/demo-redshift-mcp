@@ -29,24 +29,22 @@ Response formatted for executives
 ### 1. Install Dependencies
 
 ```bash
-# Install using uv (recommended)
 uv sync
-
-# OR using pip
-pip install -r requirements.txt
 ```
+
+This creates a `.venv` and installs everything from `pyproject.toml`. Use `uv run ...` (below) so commands always resolve to this environment instead of your system Python.
 
 ### 2. Environment Setup
 
 ```bash
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your OPENAI_API_KEY
 ```
 
 ### 3. Generate Mock Data
 
 ```bash
-python -m demo_redshift_mcp.data_generator
+uv run python -m demo_redshift_mcp.data_generator
 ```
 
 This creates:
@@ -60,7 +58,7 @@ This creates:
 
 ```bash
 # Launch Gradio interface
-python -m demo_redshift_mcp
+uv run demo-redshift-mcp
 
 # Opens at http://localhost:7860
 ```
@@ -68,8 +66,8 @@ python -m demo_redshift_mcp
 ### Command Line (Testing)
 
 ```bash
-python -c "
-from src.demo_redshift_mcp.crew_agents import run_customer_migration_analysis
+uv run python -c "
+from demo_redshift_mcp.crew_agents import run_customer_migration_analysis
 result = run_customer_migration_analysis('How many customers renewed?')
 print(result)
 "
@@ -167,16 +165,16 @@ cd /Users/Balu/Documents/Projects/MyCode/demo-redshift-mcp
 # Reinstall dependencies
 uv sync
 ```
+If you still see this, check that you're running commands with `uv run ...` rather than a bare `python`/`python3` — a system Python won't have this project's `.venv` on its path.
 
 ### "Data not found" error
 ```bash
 # Generate mock data
-python -m demo_redshift_mcp.data_generator
+uv run python -m demo_redshift_mcp.data_generator
 ```
 
 ### CrewAI errors
-- Ensure ANTHROPIC_API_KEY is set in .env
-- Check that you have Claude 3.5 Sonnet (or later) access
+- Ensure OPENAI_API_KEY is set in .env
 
 ## Development
 
@@ -190,11 +188,13 @@ python -m demo_redshift_mcp.data_generator
 ### Testing Locally
 
 ```bash
-from src.demo_redshift_mcp.data_layer import DataLayer
+uv run python -c "
+from demo_redshift_mcp.data_layer import DataLayer
 
 data = DataLayer()
 result = data.customers_renewed()
 print(result)
+"
 ```
 
 ## License

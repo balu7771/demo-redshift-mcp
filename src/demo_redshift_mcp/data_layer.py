@@ -1,4 +1,4 @@
-"""Data access layer for insurance customer data."""
+"""Data access layer for Ratha Chakram expat insurance data."""
 
 import pandas as pd
 from pathlib import Path
@@ -10,238 +10,163 @@ from datetime import datetime
 # ============================================================================
 
 class DataLayer:
-    """Unified data access layer for legacy, new product, and competitor data."""
+    """Unified data access layer for competitor pool, Ratha customers, and switch tracking."""
 
     def __init__(self, data_dir: str = "./data"):
         self.data_dir = Path(data_dir)
-        self.legacy_df = None
-        self.new_product_df = None
-        self.competitor_df = None
+        self.competitor_pool_df = None
+        self.ratha_df = None
+        self.tracking_df = None
         self._load_all_data()
 
     def _load_all_data(self):
         """Load all datasets from disk."""
-        legacy_path = self.data_dir / "legacy_product.xlsx"
-        new_product_path = self.data_dir / "new_product_customers.csv"
-        competitor_path = self.data_dir / "competitor_coverage.csv"
+        competitor_pool_path = self.data_dir / "competitor_expat_plans.xlsx"
+        ratha_path = self.data_dir / "ratha_chakram_customers.csv"
+        tracking_path = self.data_dir / "expat_competitive_tracking.csv"
 
-        if legacy_path.exists():
-            self.legacy_df = pd.read_excel(legacy_path)
-            print(f"Loaded legacy data: {len(self.legacy_df)} customers")
+        if competitor_pool_path.exists():
+            self.competitor_pool_df = pd.read_excel(competitor_pool_path)
+            print(f"Loaded competitor pool data: {len(self.competitor_pool_df)} expats")
         else:
-            raise FileNotFoundError(f"Legacy data not found at {legacy_path}")
+            raise FileNotFoundError(f"Competitor pool data not found at {competitor_pool_path}")
 
-        if new_product_path.exists():
-            self.new_product_df = pd.read_csv(new_product_path)
-            print(f"Loaded new product data: {len(self.new_product_df)} customers")
+        if ratha_path.exists():
+            self.ratha_df = pd.read_csv(ratha_path)
+            print(f"Loaded Ratha Chakram customer data: {len(self.ratha_df)} customers")
         else:
-            raise FileNotFoundError(f"New product data not found at {new_product_path}")
+            raise FileNotFoundError(f"Ratha Chakram customer data not found at {ratha_path}")
 
-        if competitor_path.exists():
-            self.competitor_df = pd.read_csv(competitor_path)
-            print(f"Loaded competitor data: {len(self.competitor_df)} records")
+        if tracking_path.exists():
+            self.tracking_df = pd.read_csv(tracking_path)
+            print(f"Loaded competitive tracking data: {len(self.tracking_df)} records")
         else:
-            raise FileNotFoundError(f"Competitor data not found at {competitor_path}")
+            raise FileNotFoundError(f"Competitive tracking data not found at {tracking_path}")
 
     # ========================================================================
     # Query Methods (MCP Tools)
     # ========================================================================
 
-    def query_legacy_customers(self, filters: Optional[Dict] = None) -> pd.DataFrame:
-        """Query legacy product customers."""
-        result = self.legacy_df.copy()
+    def query_competitor_pool(self, filters: Optional[Dict] = None) -> pd.DataFrame:
+        """Query expats currently on competitor plans."""
+        result = self.competitor_pool_df.copy()
 
         if filters:
-            if "state" in filters:
-                result = result[result["state"] == filters["state"]]
-            if "status" in filters:
-                result = result[result["status"] == filters["status"]]
-            if "coverage_type" in filters:
-                result = result[result["coverage_type"] == filters["coverage_type"]]
+            if "us_state" in filters:
+                result = result[result["us_state"] == filters["us_state"]]
+            if "plan_status" in filters:
+                result = result[result["plan_status"] == filters["plan_status"]]
+            if "current_provider" in filters:
+                result = result[result["current_provider"] == filters["current_provider"]]
 
         return result
 
-    def query_new_product_customers(self, filters: Optional[Dict] = None) -> pd.DataFrame:
-        """Query new product customers."""
-        result = self.new_product_df.copy()
+    def query_ratha_customers(self, filters: Optional[Dict] = None) -> pd.DataFrame:
+        """Query Ratha Chakram customers."""
+        result = self.ratha_df.copy()
 
         if filters:
-            if "state" in filters:
-                result = result[result["state"] == filters["state"]]
-            if "feature_adoption" in filters:
-                result = result[result["feature_adoption"] == filters["feature_adoption"]]
+            if "us_state" in filters:
+                result = result[result["us_state"] == filters["us_state"]]
+            if "coverage_types" in filters:
+                result = result[result["coverage_types"] == filters["coverage_types"]]
 
         return result
 
-    def query_competitor_coverage(self, filters: Optional[Dict] = None) -> pd.DataFrame:
-        """Query competitor coverage history."""
-        result = self.competitor_df.copy()
+    def query_tracking(self, filters: Optional[Dict] = None) -> pd.DataFrame:
+        """Query competitive switch-tracking history."""
+        result = self.tracking_df.copy()
 
         if filters:
-            if "competitor_name" in filters:
-                result = result[result["competitor_name"] == filters["competitor_name"]]
-            if "was_customer_with_us_before" in filters:
-                result = result[result["was_customer_with_us_before"] == filters["was_customer_with_us_before"]]
+            if "previous_company" in filters:
+                result = result[result["previous_company"] == filters["previous_company"]]
 
         return result
 
-    def customers_renewed(self) -> Dict:
+    def customers_switched(self) -> Dict:
         """
-        Find customers who renewed from legacy to new product.
+        Find expats who switched from a competitor to Ratha Chakram.
 
         Returns:
             Dict with count and sample data
         """
-        renewed_dls = set(self.new_product_df["driver_license"])
-        legacy_active = self.legacy_df[self.legacy_df["driver_license"].isin(renewed_dls)]
-
         return {
-            "count": len(renewed_dls),
-            "percentage": round((len(renewed_dls) / len(self.legacy_df)) * 100, 2),
-            "sample_records": legacy_active.head(5).to_dict("records"),
+            "count": len(self.ratha_df),
+            "percentage": round((len(self.ratha_df) / len(self.competitor_pool_df)) * 100, 2),
+            "sample_records": self.ratha_df.head(5).to_dict("records"),
         }
 
-    def customers_left(self) -> Dict:
+    def customers_retained_by_competitors(self) -> Dict:
         """
-        Find customers who left (not in new product).
+        Find expats who remained on competitor plans (did not switch to Ratha).
 
         Returns:
-            Dict with count and details
+            Dict with count and status breakdown
         """
-        renewed_dls = set(self.new_product_df["driver_license"])
-        left = self.legacy_df[~self.legacy_df["driver_license"].isin(renewed_dls)]
+        switched_ids = set(self.ratha_df["expat_id"])
+        retained = self.competitor_pool_df[~self.competitor_pool_df["expat_id"].isin(switched_ids)]
 
         return {
-            "count": len(left),
-            "percentage": round((len(left) / len(self.legacy_df)) * 100, 2),
-            "by_status": left["status"].value_counts().to_dict(),
+            "count": len(retained),
+            "percentage": round((len(retained) / len(self.competitor_pool_df)) * 100, 2),
+            "by_status": retained["plan_status"].value_counts().to_dict(),
         }
 
-    def customers_returned(self) -> Dict:
+    def switches_by_competitor(self) -> Dict:
         """
-        Find customers who went to competitor then came back to new product.
+        Breakdown of Ratha switches by which competitor the expat came from.
 
         Returns:
-            Dict with count and analysis
+            Dict with count and per-competitor breakdown
         """
-        # Customers with competitor history who ended coverage
-        competitor_history = self.competitor_df[
-            (self.competitor_df["coverage_end"].notna()) &
-            (self.competitor_df["was_customer_with_us_before"] == True)
-        ]
-
-        # Check if they're in new product
-        came_back_dls = set(self.new_product_df["driver_license"])
-        returned = competitor_history[competitor_history["driver_license"].isin(came_back_dls)]
-
         return {
-            "count": len(returned),
-            "percentage": round((len(returned) / len(self.legacy_df)) * 100, 2),
-            "by_competitor": returned["competitor_name"].value_counts().to_dict(),
-            "sample_records": returned.head(5).to_dict("records"),
+            "count": len(self.ratha_df),
+            "percentage": round((len(self.ratha_df) / len(self.competitor_pool_df)) * 100, 2),
+            "by_competitor": self.ratha_df["switched_from"].value_counts().to_dict(),
+            "sample_records": self.ratha_df.head(5).to_dict("records"),
         }
 
-    def infer_return_reasons(self) -> Dict:
+    def get_switch_reasons(self) -> Dict:
         """
-        Infer why customers came back based on feature/pricing differences.
-
-        Uses soft inference:
-        - Premium drop > 15% → "Price-Sensitive"
-        - Feature adoption "CONNECTED" → "Innovation"
-        - Feature adoption "SIMPLE" → "Simplicity"
-        - Combination → "Value + Features"
+        Reasons expats left their previous competitor and chose Ratha Chakram.
 
         Returns:
-            Dict with reason breakdown
+            Dict with reason breakdowns
         """
-        came_back_dls = set(
-            self.competitor_df[
-                (self.competitor_df["coverage_end"].notna()) &
-                (self.competitor_df["was_customer_with_us_before"] == True)
-            ]["driver_license"]
-        )
-
-        # Get matching customers in both legacy and new product
-        came_back_customers = []
-        for dl in came_back_dls:
-            legacy = self.legacy_df[self.legacy_df["driver_license"] == dl]
-            new = self.new_product_df[self.new_product_df["driver_license"] == dl]
-
-            if not legacy.empty and not new.empty:
-                came_back_customers.append({
-                    "driver_license": dl,
-                    "legacy_premium": legacy.iloc[0]["premium_6month"],
-                    "new_premium": new.iloc[0]["premium_6month"],
-                    "feature_adoption": new.iloc[0]["feature_adoption"],
-                })
-
-        reasons_count = {
-            "Price-Sensitive": 0,
-            "Innovation": 0,
-            "Simplicity": 0,
-            "Value + Features": 0,
-        }
-
-        for customer in came_back_customers:
-            premium_drop = (
-                (customer["legacy_premium"] - customer["new_premium"]) /
-                customer["legacy_premium"] * 100
-            )
-
-            reasons = []
-            if premium_drop > 15:
-                reasons.append("Price")
-
-            if customer["feature_adoption"] == "CONNECTED":
-                reasons.append("Innovation")
-            elif customer["feature_adoption"] == "SIMPLE":
-                reasons.append("Simplicity")
-
-            if len(reasons) == 0:
-                final_reason = "Value + Features"
-            elif len(reasons) == 1:
-                final_reason = reasons[0] + ("-Sensitive" if reasons[0] == "Price" else "")
-            else:
-                final_reason = "Value + Features"
-
-            reasons_count[final_reason] += 1
-
         return {
-            "total_came_back": len(came_back_customers),
-            "reason_breakdown": reasons_count,
-            "details": came_back_customers[:10],  # Sample
+            "total_switched": len(self.tracking_df),
+            "reason_left_previous": self.tracking_df["reason_left_previous"].value_counts().to_dict(),
+            "reason_chose_ratha": self.tracking_df["reason_chose_ratha"].value_counts().to_dict(),
+            "details": self.tracking_df.head(10).to_dict("records"),
         }
 
     def cross_join_analysis(self) -> Dict:
         """
-        Cross-store analysis of all migration patterns.
+        Cross-store analysis of competitive migration patterns.
 
         Returns:
             Comprehensive summary
         """
-        renewed = self.customers_renewed()
-        left = self.customers_left()
-        returned = self.customers_returned()
-        reasons = self.infer_return_reasons()
+        switched = self.customers_switched()
+        retained = self.customers_retained_by_competitors()
+        by_competitor = self.switches_by_competitor()
+        reasons = self.get_switch_reasons()
 
-        total = len(self.legacy_df)
+        total = len(self.competitor_pool_df)
 
         return {
-            "total_legacy_customers": total,
-            "renewed": {
-                "count": renewed["count"],
-                "percentage": renewed["percentage"],
+            "total_competitor_pool": total,
+            "switched": {
+                "count": switched["count"],
+                "percentage": switched["percentage"],
             },
-            "left": {
-                "count": left["count"],
-                "percentage": left["percentage"],
+            "retained_by_competitors": {
+                "count": retained["count"],
+                "percentage": retained["percentage"],
             },
-            "returned": {
-                "count": returned["count"],
-                "percentage": returned["percentage"],
-            },
-            "return_reasons": reasons["reason_breakdown"],
-            "summary": f"Out of {total} legacy customers: {renewed['count']} renewed "
-                      f"({renewed['percentage']}%), {left['count']} left ({left['percentage']}%), "
-                      f"and {returned['count']} came back ({returned['percentage']}%)",
+            "by_competitor": by_competitor["by_competitor"],
+            "switch_reasons": reasons["reason_chose_ratha"],
+            "summary": f"Out of {total} expats on competitor plans: {switched['count']} switched to Ratha Chakram "
+                      f"({switched['percentage']}%), and {retained['count']} remain with competitors "
+                      f"({retained['percentage']}%).",
         }
